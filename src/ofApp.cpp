@@ -39,19 +39,49 @@ void ofApp::setup(){
 	cam.setDistance(10);
 	cam.setNearClip(.1);
 	cam.setFov(65.5);   // approx equivalent to 28mm in 35mm format
+	cam.setPosition(ofVec3f(500, 500, 0));
 	ofSetVerticalSync(true);
 	cam.disableMouseInput();
 	ofEnableSmoothing();
 	ofEnableDepthTest();
+	
 
 	// setup rudimentary lighting 
 	//
 	initLightingAndMaterials();
-
+	spaceship.position = ofVec3f(0, 500, 0);
+	spaceship.lifespan =  -1;
+	cam.setTarget(ofVec3f(spaceship.position.x, spaceship.position.y/2, spaceship.position.z));
+	
 	mars.loadModel("geo/moon-houdini.obj");
-	mars.setScaleNormalization(false);
+	lander.loadModel("geo/lander.obj");
+	bRoverLoaded = true;
+	lander.setScaleNormalization(false);
+	lander.setScale(5, 5, 5);
+	lander.setPosition(spaceship.position.x, spaceship.position.y, spaceship.position.z);
+	sys.add(spaceship);
+	sys.addForce(&thruster);
 
+	mars.setScaleNormalization(false);
 	marsMesh = mars.getMesh(0);
+
+	exhaust.setRate(20);
+	exhaust.setParticleRadius(1);
+	exhaust.visible = false;
+	//thrustEmitter.sys->addForce(new GravityForce(ofVec3f(0, -9.81, 0)));
+	exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
+	exhaust.sys->addForce(new ImpulseRadialForce(1000));
+	exhaust.sys->addForce(new CyclicForce(10));
+
+	exhaust.setMass(1);
+	exhaust.setRandomLife(true);
+	exhaust.setOneShot(true);
+	exhaust.sys->setRandomColor(true);
+	exhaust.radius = 0.5;
+	exhaust.setParticleRadius(.05);
+	exhaust.setRate(10);
+	exhaust.setEmitterType(DirectionalEmitter);
+	exhaust.setGroupSize(50);
 
 	boundingBox = new Box(
 		Vector3(-10, -6, -13),
@@ -77,7 +107,11 @@ void ofApp::setup(){
 // incrementally update scene (animation)
 //
 void ofApp::update() {
-	
+	exhaust.sys->setColor(ofColor::red);
+	lander.setPosition(sys.particles[0].position.x, sys.particles[0].position.y, sys.particles[0].position.z);
+	sys.update();
+	exhaust.update();
+	exhaust.setPosition(sys.particles[0].position);
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
@@ -93,8 +127,8 @@ void ofApp::draw(){
 		ofSetColor(ofColor::slateGray);
 		mars.drawWireframe();
 		if (bRoverLoaded) {
-			rover.drawWireframe();
-			if (!bTerrainSelected) drawAxis(rover.getPosition());
+			lander.drawWireframe();
+			if (!bTerrainSelected) drawAxis(lander.getPosition());
 		}
 		if (bTerrainSelected) drawAxis(ofVec3f(0, 0, 0));
 	}
@@ -103,8 +137,8 @@ void ofApp::draw(){
 		mars.drawFaces();
 
 		if (bRoverLoaded) {
-			rover.drawFaces();
-			if (!bTerrainSelected) drawAxis(rover.getPosition());
+			lander.drawFaces();
+			if (!bTerrainSelected) drawAxis(lander.getPosition());
 		}
 		if (bTerrainSelected) drawAxis(ofVec3f(0, 0, 0));
 	}
@@ -128,6 +162,8 @@ void ofApp::draw(){
 	//drawBox(boundingBox);
 
 	octree->draw();
+	sys.draw();
+	exhaust.draw();
 
 	/*ofSetColor(ofColor::red);
 	for (int i=0; i < level1.size(); i++)
@@ -177,6 +213,26 @@ void ofApp::drawAxis(ofVec3f location) {
 void ofApp::keyPressed(int key) {
 
 	switch (key) {
+	case OF_KEY_UP:
+		thruster.add(ofVec3f(0, 1, 0));
+		exhaust.setVelocity(ofVec3f(0, -10, 0));
+		exhaust.start();
+		break;
+	case OF_KEY_DOWN:
+		thruster.add(ofVec3f(0, -1, 0));
+		exhaust.setVelocity(ofVec3f(0, 10, 0));
+		exhaust.start();
+		break;
+	case OF_KEY_LEFT:
+		thruster.add(ofVec3f(-1, 0, 0));
+		exhaust.setVelocity(ofVec3f(10, 0, 0));
+		exhaust.start();
+		break;
+	case OF_KEY_RIGHT:
+		thruster.add(ofVec3f(1, 0, 0));
+		exhaust.setVelocity(ofVec3f(-10, 0, 0));
+		exhaust.start();
+		break;
 	case 'C':
 	case 'c':
 		if (cam.getMouseInputEnabled()) cam.disableMouseInput();
@@ -240,7 +296,8 @@ void ofApp::togglePointsDisplay() {
 }
 
 void ofApp::keyReleased(int key) {
-
+	exhaust.stop();
+	thruster.set(ofVec3f(0, 0, 0));
 	switch (key) {
 	
 	case OF_KEY_ALT:
@@ -502,10 +559,10 @@ void ofApp::dragEvent(ofDragInfo dragInfo) {
 	ofVec3f point;
 	mouseIntersectPlane(ofVec3f(0, 0, 0), cam.getZAxis(), point);
 
-	if (rover.loadModel(dragInfo.files[0])) {
-		rover.setScaleNormalization(false);
-		rover.setScale(.005, .005, .005);
-		rover.setPosition(point.x, point.y, point.z);
+	if (lander.loadModel(dragInfo.files[0])) {
+		lander.setScaleNormalization(false);
+		lander.setScale(.005, .005, .005);
+		lander.setPosition(point.x, point.y, point.z);
 		bRoverLoaded = true;
 	}
 	else cout << "Error: Can't load model" << dragInfo.files[0] << endl;

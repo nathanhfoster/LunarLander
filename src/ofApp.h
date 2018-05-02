@@ -6,6 +6,8 @@
 #include "ray.h"
 #include "Octree.h"
 #include "Clock.h"
+#include "ParticleEmitter.h"
+#include "ParticleSystem.h"
 
 class ofApp : public ofBaseApp{
 
@@ -40,7 +42,14 @@ class ofApp : public ofBaseApp{
 		bool mouseIntersectPlane(ofVec3f planePoint, ofVec3f planeNorm, ofVec3f &point);
 
 		ofEasyCam cam;
-		ofxAssimpModelLoader mars, rover;
+		ofxAssimpModelLoader mars, lander;
+
+		Particle spaceship;
+		ParticleEmitter exhaust;
+		ParticleSystem sys;
+		ThrusterForce thruster;
+		ofSoundPlayer thrust_sound;
+
 		ofMesh marsMesh;
 		ofLight light;
 		Box* boundingBox;
