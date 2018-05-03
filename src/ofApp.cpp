@@ -13,7 +13,7 @@
 //
 //  Please do not modify any of the keymappings.  I would like 
 //  the input interface to be the same for each student's 
-//  work.  Please also add your name/date below.
+//  work.  Please also add your name/date below.5
 
 //  Please document/comment all of your work !
 //  Have Fun !!
@@ -59,6 +59,8 @@ void ofApp::setup(){
 	lander.setScaleNormalization(false);
 	lander.setScale(5, 5, 5);
 	lander.setPosition(spaceship.position.x, spaceship.position.y, spaceship.position.z);
+	landerMesh = lander.getMesh(0);
+	
 	sys.add(spaceship);
 	sys.addForce(&thruster);
 
@@ -87,6 +89,10 @@ void ofApp::setup(){
 		Vector3(-10, -6, -13),
 		Vector3(10, 6, 14)
 	);
+
+	landerBoundingBox = meshBounds(landerMesh);
+
+
 	
 	//  Test Box Subdivide
 	//
@@ -99,6 +105,7 @@ void ofApp::setup(){
 	Clock octreeClock;
 
 	octree = new TreeNode(boundingBox, 9, &marsMesh, true, startingVerts);
+	//landerOctree = new TreeNode(landerBoundingBox, 5, &landerMesh, true, startingVerts);
 
 	cout << "Octree built in " << octreeClock.getTimeMillis() << " ms" << endl;
 }
@@ -211,6 +218,9 @@ void ofApp::drawAxis(ofVec3f location) {
 
 
 void ofApp::keyPressed(int key) {
+	ofVec3f* col = new ofVec3f(lander.getPosition().x, lander.getPosition().y, lander.getPosition().z);
+	Ray ray2 = Ray(Vector3(col->x, col->y, col->z),
+		Vector3(col->x, col->y, col->z));
 
 	switch (key) {
 	case OF_KEY_UP:
@@ -222,6 +232,11 @@ void ofApp::keyPressed(int key) {
 		thruster.add(ofVec3f(0, -1, 0));
 		exhaust.setVelocity(ofVec3f(0, 10, 0));
 		exhaust.start();
+		
+		if (octree->checkIntersection(ray2))
+			cout << "COLLISION" << endl;
+		else
+			cout << "NO COLLISION" << endl;
 		break;
 	case OF_KEY_LEFT:
 		thruster.add(ofVec3f(-1, 0, 0));
@@ -333,6 +348,7 @@ void ofApp::mousePressed(int x, int y, int button) {
 	rayDir.normalize();
 	Ray ray = Ray(Vector3(rayPoint.x, rayPoint.y, rayPoint.z),
 		Vector3(rayDir.x, rayDir.y, rayDir.z));
+	
 
 	Clock selectionClock;
 

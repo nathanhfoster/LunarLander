@@ -50,9 +50,9 @@ class ofApp : public ofBaseApp{
 		ThrusterForce thruster;
 		ofSoundPlayer thrust_sound;
 
-		ofMesh marsMesh;
+		ofMesh marsMesh, landerMesh;
 		ofLight light;
-		Box* boundingBox;
+		Box* boundingBox, landerBoundingBox;
 		vector<vector<Box>> levels;
 	
 		bool bAltKeyDown;
@@ -70,5 +70,5 @@ class ofApp : public ofBaseApp{
 
 		const float selectionRange = 4.0;
 
-		TreeNode* octree;
+		TreeNode* octree, landerOctree;
 };

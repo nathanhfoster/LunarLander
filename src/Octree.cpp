@@ -31,7 +31,7 @@ TreeNode::TreeNode(Box* newBox, int newDepth, ofMesh* newMesh, bool checkAll, ve
 	}
 }
 
-void TreeNode::checkIntersection(Ray ray) {
+bool TreeNode::checkIntersection(Ray ray) {
 	if (this->box->intersect(ray, -100, 100)) {
 		shouldDraw = true;
 		if (!isLeaf()) {
@@ -40,6 +40,7 @@ void TreeNode::checkIntersection(Ray ray) {
 			}
 		}
 	}
+	return shouldDraw;
 }
 
 bool TreeNode::isLeaf() { return children[0] == nullptr; }

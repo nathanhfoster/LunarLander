@@ -16,7 +16,7 @@ public:
 	map<int, ofColor> colors;
 
 	TreeNode(Box* newBox, int newDepth, ofMesh* newMesh, bool checkAll, vector<int> possibleVerts);
-	void checkIntersection(Ray ray);
+	bool checkIntersection(Ray ray);
 	bool isLeaf();
 	void draw();
 	void undraw();
