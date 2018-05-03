@@ -51,7 +51,7 @@ class ofApp : public ofBaseApp{
 		ofSoundPlayer thrust_sound;
 
 		ofMesh marsMesh;
-		ofLight light;
+		ofLight light, keyLight, rimLight, fillLight;
 		Box* boundingBox;
 		vector<vector<Box>> levels;
 	

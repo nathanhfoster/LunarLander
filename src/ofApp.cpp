@@ -44,12 +44,13 @@ void ofApp::setup(){
 	cam.disableMouseInput();
 	ofEnableSmoothing();
 	ofEnableDepthTest();
+    ofEnableLighting();
 	
 
 	// setup rudimentary lighting 
 	//
 	initLightingAndMaterials();
-	spaceship.position = ofVec3f(0, 500, 0);
+	spaceship.position = ofVec3f(0, 300, 0);
 	spaceship.lifespan =  -1;
 	cam.setTarget(ofVec3f(spaceship.position.x, spaceship.position.y/2, spaceship.position.z));
 	
@@ -82,7 +83,38 @@ void ofApp::setup(){
 	exhaust.setRate(10);
 	exhaust.setEmitterType(DirectionalEmitter);
 	exhaust.setGroupSize(50);
+    
+    // red is x, green is y, blue is z
+    keyLight.setup();
+    keyLight.enable();
+    keyLight.setAreaLight(1, 1);
+    keyLight.setAmbientColor(ofFloatColor(0.1, 0.1, 0.1));
+    keyLight.setDiffuseColor(ofFloatColor(1, 1, 1));
+    keyLight.setSpecularColor(ofFloatColor(1, 1, 1));
+    keyLight.setPosition(cam.getPosition());
+    keyLight.lookAt(spaceship.position);
 
+    fillLight.setup();
+    fillLight.enable();
+    fillLight.setSpotlight();
+    fillLight.setSpotlightCutOff(5);
+    fillLight.setAmbientColor(ofFloatColor(0.1, 0.1, 0.1));
+    fillLight.setDiffuseColor(ofFloatColor(1, 1, 1));
+    fillLight.setSpecularColor(ofFloatColor(1, 1, 1));
+    fillLight.lookAt(spaceship.position);
+    fillLight.setPosition(0, spaceship.position.y - 100, 150);
+    
+    rimLight.setup();
+    rimLight.enable();
+    rimLight.setSpotlight();
+    rimLight.setSpotlightCutOff(15);
+    rimLight.setAmbientColor(ofFloatColor(0.1, 0.1, 0.1));
+    rimLight.setDiffuseColor(ofFloatColor(1, 1, 1));
+    rimLight.setSpecularColor(ofFloatColor(1, 1, 1));
+    rimLight.lookAt(spaceship.position);
+    rimLight.setPosition(-50, spaceship.position.y, -150);
+
+    
 	boundingBox = new Box(
 		Vector3(-10, -6, -13),
 		Vector3(10, 6, 14)
@@ -112,6 +144,16 @@ void ofApp::update() {
 	sys.update();
 	exhaust.update();
 	exhaust.setPosition(sys.particles[0].position);
+    
+    keyLight.lookAt(sys.particles[0].position);
+
+    rimLight.lookAt(sys.particles[0].position);
+    fillLight.lookAt(sys.particles[0].position);
+//    rimLight.setPosition(-50, spaceship.position.y, -150);
+//    fillLight.setPosition(0, spaceship.position.y - 100, 150);
+
+
+
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
@@ -165,7 +207,11 @@ void ofApp::draw(){
 	sys.draw();
 	exhaust.draw();
 
-	/*ofSetColor(ofColor::red);
+    keyLight.draw();
+    fillLight.draw();
+    rimLight.draw();
+    
+    /*ofSetColor(ofColor::red);
 	for (int i=0; i < level1.size(); i++)
 		drawBox(level1->at(i));
 
