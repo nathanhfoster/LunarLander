@@ -2,10 +2,9 @@
 
 #include "ofMain.h"
 #include  "ofxAssimpModelLoader.h"
-#include "box.h"
-#include "ray.h"
-#include "Octree.h"
-#include "Clock.h"
+#include "Octree.hpp"
+#include "Box.hpp"
+#include "Ray.hpp"
 #include "ParticleEmitter.h"
 #include "ParticleSystem.h"
 
@@ -51,18 +50,39 @@ class ofApp : public ofBaseApp{
 		ofSoundPlayer thrust_sound;
 
 		ofMesh marsMesh;
-		ofLight light, keyLight, rimLight, fillLight;
-		Box* boundingBox;
-		vector<vector<Box>> levels;
-	
-		bool bAltKeyDown;
-		bool bCtrlKeyDown;
-		bool bWireframe;
-		bool bDisplayPoints;
+        vector<vector<Box>> levels;
+    
+    // chris kang
+    void setupCam();
+    void setupBools();
+    void setupEnv();
+    void setupLander();
+    void setupSceneLights();
+    
+    void checkCollision();
+    
+    void createOctree(const ofMesh & mesh);
+    float getAGL();
+
+    ofLight light, keyLight, rimLight, fillLight;
+    
+    bool showOctree;
+    ofVec3f closestPoint;
+    int level;
+    Octree *octree;
+    OctreePoint *octreePoints;
+    
+    ImpulseForce collisionForce;
+
+    
+		bool bAltKeyDown = false;
+		bool bCtrlKeyDown = false;
+		bool bWireframe = false;
+		bool bDisplayPoints = false;
 		bool bPointSelected;
 		
-		bool bRoverLoaded;
-		bool bTerrainSelected;
+		bool bRoverLoaded = false;
+		bool bTerrainSelected = true;
 	
 		ofVec3f selectedPoint;
 		ofVec3f intersectPoint;
@@ -70,5 +90,5 @@ class ofApp : public ofBaseApp{
 
 		const float selectionRange = 4.0;
 
-		TreeNode* octree;
+//        TreeNode* octree;
 };

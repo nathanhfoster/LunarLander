@@ -83,4 +83,21 @@ public:
 	void updateForce(Particle *);
 };
 
+class ImpulseForce: public ParticleForce {
+    ofVec3f force;
+public:
+    ImpulseForce() {
+        applyOnce = true;
+        applied = true;
+        force = ofVec3f(0,0,0);
+    }
+    void apply(const ofVec3f f) {
+        applied = false;
+        force = f;
+    }
+    void updateForce(Particle * particle) {
+        particle->forces += force;
+    }
+};
+
 
