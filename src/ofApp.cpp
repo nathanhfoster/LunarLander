@@ -36,7 +36,7 @@ void ofApp::setup(){
     bCtrlKeyDown = false;
     bRoverLoaded = false;
     bTerrainSelected = true;
-    camMove = true;
+    aimView = true;
     sideView = false;
     
     camPosition = ofVec3f(10, 100, 200);
@@ -119,19 +119,23 @@ void ofApp::update() {
     sys.update();
     exhaust.update();
     exhaust.setPosition(sys.particles[0].position);
-    
-    //look at the lunar
-    if(camMove)
+
+    //click key 1 to look at the lunar from the starting view
+    if(aimView)
     {
         cam.setPosition(camPosition);
         cam.lookAt(lander.getPosition());
     }else if(sideView)
     {
+        //click key 3 to look at sideview on lunar camera
         cam.setPosition(lander.getPosition().x, lander.getPosition().y, lander.getPosition().z);
+        sideCamPosition = ofVec3f(lander.getPosition().x, lander.getPosition().y, lander.getPosition().z - 1);
+        cam.setTarget(sideCamPosition);
     }else
     {
+        //click key 2 to look down on a lunar camera
         cam.setPosition(lander.getPosition().x, lander.getPosition().y, lander.getPosition().z);
-        downView = ofVec3f(lander.getPosition().x, mars.getPosition().y, lander.getPosition().z);
+        downView = ofVec3f(lander.getPosition().x ,mars.getPosition().y, lander.getPosition().z);
         cam.setTarget(downView);
     }
     
@@ -270,15 +274,15 @@ void ofApp::keyPressed(int key) {
         case 'h':
             break;
         case '1':
-            camMove = true;
+            aimView = true;
             break;
         case '2':
-            camMove = false;
+            aimView = false;
             sideView = false;
             break;
         case '3':
             sideView = true;
-            camMove = false;
+            aimView = false;
             break;
         case 'r':
             cam.reset();
