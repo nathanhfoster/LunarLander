@@ -42,22 +42,22 @@ class ofApp : public ofBaseApp{
 
 		ofEasyCam cam;
 		ofxAssimpModelLoader mars, lander;
+        ofMesh marsMesh;
 
-		Particle spaceship;
-		ParticleEmitter exhaust;
-		ParticleSystem sys;
-		ThrusterForce thruster;
-		ofSoundPlayer thrust_sound;
+    // nathan
+    Particle spaceship;
+    ParticleEmitter exhaust;
+    ParticleSystem sys;
+    ThrusterForce thruster;
+    ofSoundPlayer thrust_sound;
 
-		ofMesh marsMesh;
-        vector<vector<Box>> levels;
-    
     // chris kang
     void setupCam();
     void setupBools();
     void setupEnv();
     void setupLander();
     void setupSceneLights();
+    void toggleCam(int option);
     
     void checkCollision();
     
@@ -68,12 +68,12 @@ class ofApp : public ofBaseApp{
     
     bool showOctree;
     ofVec3f closestPoint;
-    int level;
+    int level, camOption = 1;
     Octree *octree;
     OctreePoint *octreePoints;
     
     ImpulseForce collisionForce;
-
+    ofImage spacefield;
     
 		bool bAltKeyDown = false;
 		bool bCtrlKeyDown = false;
@@ -89,6 +89,4 @@ class ofApp : public ofBaseApp{
 
 
 		const float selectionRange = 4.0;
-
-//        TreeNode* octree;
 };

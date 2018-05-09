@@ -38,6 +38,8 @@ void ofApp::setup(){
 
 	cam.setTarget(ofVec3f(spaceship.position.x, spaceship.position.y/2, spaceship.position.z));
 
+//    spacefield.load("starfield.jpg");
+    
     mars.loadModel("geo/moon-houdini.obj");
 	mars.setScaleNormalization(false);
 	marsMesh = mars.getMesh(0);
@@ -52,6 +54,7 @@ void ofApp::setup(){
 // incrementally update scene (animation)
 //
 void ofApp::update() {
+//    cout << "Cam Position: " << cam.getPosition() << endl;
     ofVec3f landerVelocity = sys.particles[0].velocity;
     ofVec3f landerPosition = sys.particles[0].position;
     
@@ -77,13 +80,14 @@ void ofApp::update() {
         collisionForce.apply(landingForce);
         cout << "collided" << endl;
     }
-
+    
+    //camera
+    toggleCam(camOption);
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
-
-//	ofBackgroundGradient(ofColor(20), ofColor(0));   // pick your own backgroujnd
-	ofBackground(ofColor::black);
+    ofBackgroundGradient(ofColor(20), ofColor(0));   // pick your own backgroujnd
+//    ofBackground(ofColor::black);
 //	cout << ofGetFrameRate() << endl;
 
 	cam.begin();
@@ -124,45 +128,45 @@ void ofApp::draw(){
 	}
 	
 	ofNoFill();
-	ofSetColor(ofColor::white);
+	ofSetColor(255,255,255);
 
-    sys.draw();
+//    sys.draw();
     exhaust.draw();
 
-    keyLight.draw();
-    fillLight.draw();
-    rimLight.draw();
-    
-    switch (level) {
-        case 1:
-            ofSetColor(255, 255, 255);
-            break;
-        case 2:
-            ofSetColor(0, 255, 0);
-            break;
-        case 3:
-            ofSetColor(0, 0, 255);
-            break;
-        case 4:
-            ofSetColor(255, 255, 0);
-            break;
-        case 5:
-            ofSetColor(0, 255, 255);
-            break;
-        case 6:
-            ofSetColor(255, 0, 0);
-            break;
-        case 7:
-            ofSetColor(100, 255, 125);
-            break;
-        case 8:
-            ofSetColor(67, 100, 125);
-            break;
-        case 9:
-            ofSetColor(125, 0, 200);
-            break;
-    }
-    if (showOctree) octree->drawOctree(level);
+//    keyLight.draw();
+//    fillLight.draw();
+//    rimLight.draw();
+//
+//    switch (level) {
+//        case 1:
+//            ofSetColor(255, 255, 255);
+//            break;
+//        case 2:
+//            ofSetColor(0, 255, 0);
+//            break;
+//        case 3:
+//            ofSetColor(0, 0, 255);
+//            break;
+//        case 4:
+//            ofSetColor(255, 255, 0);
+//            break;
+//        case 5:
+//            ofSetColor(0, 255, 255);
+//            break;
+//        case 6:
+//            ofSetColor(255, 0, 0);
+//            break;
+//        case 7:
+//            ofSetColor(100, 255, 125);
+//            break;
+//        case 8:
+//            ofSetColor(67, 100, 125);
+//            break;
+//        case 9:
+//            ofSetColor(125, 0, 200);
+//            break;
+//    }
+//    if (showOctree) octree->drawOctree(level);
     ofDrawSphere(closestPoint, 1);
     
 	ofPopMatrix();
@@ -200,31 +204,30 @@ void ofApp::drawAxis(ofVec3f location) {
 void ofApp::keyPressed(int key) {
 switch (key) {
     case '1':
-        level = 1;
+        camOption = 1;
         break;
     case '2':
-        level = 2;
+        camOption = 2;
         break;
     case '3':
-        level = 3;
+        camOption = 3;
         break;
     case '4':
-        level = 4;
+        camOption = 4;
         break;
     case '5':
-        level = 5;
+        camOption = 5;
         break;
     case '6':
-        level = 6;
+        camOption = 6;
         break;
     case '7':
-        level = 7;
         break;
-    case '8':
-        level = 8;
+    case '-':
+        level -= 1;
         break;
-    case '9':
-        level = 9;
+    case '=':
+        level += 1;
         break;
     case '0':
         showOctree = !showOctree;
@@ -306,7 +309,6 @@ switch (key) {
 	case OF_KEY_DEL:
 		break;
 	case GLFW_KEY_SPACE:
-//        octree->undraw();
 		break;
 	default:
 		break;
@@ -323,6 +325,49 @@ void ofApp::toggleSelectTerrain() {
 
 void ofApp::togglePointsDisplay() {
 	bDisplayPoints = !bDisplayPoints;
+}
+
+void ofApp::toggleCam(int option) {
+    ofVec3f landerPosition = sys.particles[0].position;
+    switch (option) {
+        case 1: {
+            cam.enableMouseInput();
+            cam.setPosition(ofVec3f(175, 75, 0));
+            break;
+        }
+        case 2: {
+            cam.disableMouseInput();
+            cam.setPosition(landerPosition + ofVec3f(-43,90,31));
+            cam.lookAt(closestPoint);
+            break;
+        }
+        case 3: {
+            cam.disableMouseInput();
+            cam.setPosition(ofVec3f(85, 146, 133));
+            cam.lookAt(landerPosition);
+            break;
+        }
+        case 4: {
+            cam.disableMouseInput();
+            cam.setPosition(285, 32, -93);
+            cam.lookAt(landerPosition);
+            break;
+        }
+        case 5: {
+            cam.disableMouseInput();
+            cam.setPosition(landerPosition + ofVec3f(60,0,60));
+            cam.lookAt(landerPosition);
+            break;
+        }
+        case 6: {
+            cam.disableMouseInput();
+            cam.setPosition(landerPosition);
+            cam.lookAt(closestPoint);
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 void ofApp::keyReleased(int key) {
@@ -355,29 +400,6 @@ void ofApp::mouseMoved(int x, int y ){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
 	if (bAltKeyDown) return;
-//    ofVec3f spaceshipPosition = sys.particles[0].position;
-//    ofVec3f rayPoint = spaceshipPosition;
-//    ofVec3f rayDir = ofVec3f(0, -1, 0).normalize();
-//    Ray ray = Ray(rayPoint, rayDir);
-    
-//    ofVec3f mouse(mouseX, mouseY);
-//    ofVec3f rayPoint = cam.screenToWorld(mouse);
-//    ofVec3f rayDir = rayPoint - cam.getPosition();
-//    rayDir.normalize();
-//    Ray ray = Ray(ofVec3f(rayPoint.x, rayPoint.y, rayPoint.z),
-//                  ofVec3f(rayDir.x, rayDir.y, rayDir.z));
-////    float start = ofGetElapsedTimeMillis();
-//    std::vector<ofVec3f>().swap(intersectedPoints);
-//    octree->highlightIntersectBox(ray, intersectedPoints);
-////    float finish = ofGetElapsedTimeMillis() - start;
-////    cout << "Time taken to traverse octree: " << finish << endl;
-////
-//    if (intersectedPoints.size() > 0) {
-//        closest = ofVec3f(intersectedPoints[0]);
-//        cout << closest << endl;
-//            cout << "cam position: " << cam.getPosition() << "distance from cam to point: " << ofDist(cam.getPosition().x, cam.getPosition().y, cam.getPosition().z, closest.x, closest.y, closest.z)<< endl;
-//    }
-
 }
 
 
@@ -417,38 +439,6 @@ Box ofApp::meshBounds(const ofMesh & mesh) {
     return Box(ofVec3f(min.x, min.y, min.z), ofVec3f(max.x, max.y, max.z));
 }
 
-//  Subdivide a Box into eight(8) equal size boxes, return them in boxList;
-//
-/*void ofApp::subDivideBox8(const Box &box, vector<Box> & boxList) {
-	Vector3 min = box.parameters[0];
-	Vector3 max = box.parameters[1];
-	Vector3 size = max - min;
-	Vector3 center = size / 2 + min;
-	float xdist = (max.x() - min.x()) / 2;
-	float ydist = (max.y() - min.y()) / 2;
-	float zdist = (max.z() - min.z()) / 2;
-	Vector3 h = Vector3(0, ydist, 0);
-
-	//  generate ground floor
-	//
-	Box b[8];
-	b[0] = Box(min, center);
-	b[1] = Box(b[0].min() + Vector3(xdist, 0, 0), b[0].max() + Vector3(xdist, 0, 0));
-	b[2] = Box(b[1].min() + Vector3(0, 0, zdist), b[1].max() + Vector3(0, 0, zdist));
-	b[3] = Box(b[2].min() + Vector3(-xdist, 0, 0), b[2].max() + Vector3(-xdist, 0, 0));
-
-	//boxList->clear();
-	for (int i = 0; i < 4; i++)
-		boxList.push_back(b[i]);
-
-	// generate second story
-	//
-	for (int i = 4; i < 8; i++) {
-		b[i] = Box(b[i - 4].min() + h, b[i - 4].max() + h);
-		boxList.push_back(b[i]);
-	}
-}*/
-
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {
 
@@ -458,60 +448,6 @@ void ofApp::mouseDragged(int x, int y, int button) {
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button) {
 
-}
-
-
-//
-//  Select Target Point on Terrain by comparing distance of mouse to 
-//  vertice points projected onto screenspace.
-//  if a point is selected, return true, else return false;
-//
-bool ofApp::doPointSelection() {
-
-	ofMesh mesh = mars.getMesh(0);
-	int n = mesh.getNumVertices();
-	float nearestDistance = 0;
-	int nearestIndex = 0;
-
-	bPointSelected = false;
-
-	ofVec2f mouse(mouseX, mouseY);
-	vector<ofVec3f> selection;
-
-	// We check through the mesh vertices to see which ones
-	// are "close" to the mouse point in screen space.  If we find 
-	// points that are close, we store them in a vector (dynamic array)
-	//
-	for (int i = 0; i < n; i++) {
-		ofVec3f vert = mesh.getVertex(i);
-		ofVec3f posScreen = cam.worldToScreen(vert);
-		float distance = posScreen.distance(mouse);
-		if (distance < selectionRange) {
-			selection.push_back(vert);
-			bPointSelected = true;
-		}
-	}
-
-	//  if we found selected points, we need to determine which
-	//  one is closest to the eye (camera). That one is our selected target.
-	//
-	if (bPointSelected) {
-		float distance = 0;
-		for (int i = 0; i < selection.size(); i++) {
-			ofVec3f point =  cam.worldToCamera(selection[i]);
-
-			// In camera space, the camera is at (0,0,0), so distance from 
-			// the camera is simply the length of the point vector
-			//
-			float curDist = point.length(); 
-
-			if (i == 0 || curDist < distance) {
-				distance = curDist;
-				selectedPoint = selection[i];
-			}
-		}
-	}
-	return bPointSelected;
 }
 
 // Set the camera to use the selected point as it's new target
@@ -540,46 +476,6 @@ void ofApp::windowResized(int w, int h){
 void ofApp::gotMessage(ofMessage msg){
 
 }
-
-
-
-//--------------------------------------------------------------
-// setup basic ambient lighting in GL  (for now, enable just 1 light)
-//
-void ofApp::initLightingAndMaterials() {
-
-	static float ambient[] =
-	{ .5f, .5f, .5, 1.0f };
-	static float diffuse[] =
-	{ 1.0f, 1.0f, 1.0f, 1.0f };
-
-	static float position[] =
-	{5.0, 5.0, 5.0, 0.0 };
-
-	static float lmodel_ambient[] =
-	{ 1.0f, 1.0f, 1.0f, 1.0f };
-
-	static float lmodel_twoside[] =
-	{ GL_TRUE };
-
-
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
-
-	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT1, GL_POSITION, position);
-
-
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
-	glLightModelfv(GL_LIGHT_MODEL_TWO_SIDE, lmodel_twoside);
-
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-//	glEnable(GL_LIGHT1);
-	glShadeModel(GL_SMOOTH);
-} 
 
 void ofApp::savePicture() {
 	ofImage picture;
@@ -709,7 +605,7 @@ void ofApp::setupCam() {
     cam.setDistance(10);
     cam.setNearClip(.1);
     cam.setFov(65.5);   // approx equivalent to 28mm in 35mm format
-    cam.setPosition(ofVec3f(500, 500, 0));
+    cam.setPosition(ofVec3f(175, 75, 0));
     cam.disableMouseInput();
 }
 
@@ -753,7 +649,7 @@ void ofApp::setupSceneLights() {
 }
 
 void ofApp::setupLander() {
-    spaceship.position = ofVec3f(0, 300, 0);
+    spaceship.position = ofVec3f(0, 150, 0);
     spaceship.lifespan =  -1;
     sys.add(spaceship);
     sys.addForce(&thruster);
@@ -773,6 +669,44 @@ void ofApp::setupLander() {
     exhaust.setParticleRadius(3);
     exhaust.setRate(15);
     exhaust.setEmitterType(DirectionalEmitter);
+}
+
+//--------------------------------------------------------------
+// setup basic ambient lighting in GL  (for now, enable just 1 light)
+//
+void ofApp::initLightingAndMaterials() {
+    
+    static float ambient[] =
+    { .5f, .5f, .5, 1.0f };
+    static float diffuse[] =
+    { 1.0f, 1.0f, 1.0f, 1.0f };
+    
+    static float position[] =
+    {5.0, 5.0, 5.0, 0.0 };
+    
+    static float lmodel_ambient[] =
+    { 1.0f, 1.0f, 1.0f, 1.0f };
+    
+    static float lmodel_twoside[] =
+    { GL_TRUE };
+    
+    
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    glLightfv(GL_LIGHT0, GL_POSITION, position);
+    
+    glLightfv(GL_LIGHT1, GL_AMBIENT, ambient);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
+    glLightfv(GL_LIGHT1, GL_POSITION, position);
+    
+    
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
+    glLightModelfv(GL_LIGHT_MODEL_TWO_SIDE, lmodel_twoside);
+    
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    //    glEnable(GL_LIGHT1);
+    glShadeModel(GL_SMOOTH);
 }
 
 
