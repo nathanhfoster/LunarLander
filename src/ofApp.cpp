@@ -18,8 +18,8 @@
 //  Please document/comment all of your work !
 //  Have Fun !!
 //
-//  Student Name:   < Your Name goes Here >
-//  Date: <date of last version>
+//  Student Name:  Christopher Kang
+//  Date: 5/8/2018
 
 
 #include "ofApp.h"
@@ -30,122 +30,64 @@
 // setup scene, lighting, state and load geometry
 //
 void ofApp::setup(){
-    bWireframe = false;
-    bDisplayPoints = false;
-    bAltKeyDown = false;
-    bCtrlKeyDown = false;
-    bRoverLoaded = false;
-    bTerrainSelected = true;
-    aimView = true;
-    sideView = false;
+    setupBools();
+    setupCam();
+    setupEnv();
+    setupLander();
+    setupSceneLights();
     
-    camPosition = ofVec3f(10, 100, 200);
+    cam.setTarget(ofVec3f(spaceship.position.x, spaceship.position.y/2, spaceship.position.z));
     
-    cam.setDistance(10);
-    cam.setNearClip(.1);
-    cam.setFov(65.5);   // approx equivalent to 28mm in 35mm format
-    cam.setPosition(camPosition);
-    ofSetVerticalSync(true);
-    cam.disableMouseInput();
-    ofEnableSmoothing();
-    ofEnableDepthTest();
-    
-    
-    // setup rudimentary lighting
-    //
-    initLightingAndMaterials();
-    spaceship.position = ofVec3f(0, 100, 0);
-    spaceship.lifespan =  -1;
-    //    cam.setTarget(ofVec3f(spaceship.position.x, spaceship.position.y/2, spaceship.position.z));
+    //    spacefield.load("starfield.jpg");
     
     mars.loadModel("geo/moon-houdini.obj");
-    lander.loadModel("geo/lander.obj");
-    bRoverLoaded = true;
-    lander.setScaleNormalization(false);
-    lander.setScale(5, 5, 5);
-    lander.setPosition(spaceship.position.x, spaceship.position.y, spaceship.position.z);
-    sys.add(spaceship);
-    sys.addForce(&thruster);
-    
     mars.setScaleNormalization(false);
     marsMesh = mars.getMesh(0);
     
-    exhaust.setRate(20);
-    exhaust.setParticleRadius(1);
-    exhaust.visible = false;
-    //thrustEmitter.sys->addForce(new GravityForce(ofVec3f(0, -9.81, 0)));
-    exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
-    exhaust.sys->addForce(new ImpulseRadialForce(1000));
-    exhaust.sys->addForce(new CyclicForce(10));
+    createOctree(mars.getMesh(0));
+    level = 1;
+    showOctree = false;
     
-    exhaust.setMass(1);
-    exhaust.setRandomLife(true);
-    exhaust.setOneShot(true);
-    exhaust.sys->setRandomColor(true);
-    exhaust.radius = 0.5;
-    exhaust.setParticleRadius(.05);
-    exhaust.setRate(10);
-    exhaust.setEmitterType(DirectionalEmitter);
-    exhaust.setGroupSize(50);
-    
-    
-    
-    boundingBox = new Box(
-                          Vector3(-10, -6, -13),
-                          Vector3(10, 6, 14)
-                          );
-    
-    //  Test Box Subdivide
-    //
-    //levels = new vector<vector<Box>*>();
-    
-    // Create 5 levels
-    
-    vector<int> startingVerts;
-    
-    Clock octreeClock;
-    
-    octree = new TreeNode(boundingBox, 9, &marsMesh, true, startingVerts);
-    
-    cout << "Octree built in " << octreeClock.getTimeMillis() << " ms" << endl;
 }
 
 //--------------------------------------------------------------
 // incrementally update scene (animation)
 //
 void ofApp::update() {
-    //    exhaust.sys->setColor(ofColor::red);
-    lander.setPosition(sys.particles[0].position.x, sys.particles[0].position.y, sys.particles[0].position.z);
+    //    cout << "Cam Position: " << cam.getPosition() << endl;
+    ofVec3f landerVelocity = sys.particles[0].velocity;
+    ofVec3f landerPosition = sys.particles[0].position;
+    
+    // lander
     sys.update();
     exhaust.update();
-    exhaust.setPosition(sys.particles[0].position);
-
-    //click key 1 to look at the lunar from the starting view
-    if(aimView)
-    {
-        cam.setPosition(camPosition);
-        cam.lookAt(lander.getPosition());
-    }else if(sideView)
-    {
-        //click key 3 to look at sideview on lunar camera
-        cam.setPosition(lander.getPosition().x, lander.getPosition().y, lander.getPosition().z);
-        sideCamPosition = ofVec3f(lander.getPosition().x, lander.getPosition().y, lander.getPosition().z - 1);
-        cam.setTarget(sideCamPosition);
-    }else
-    {
-        //click key 2 to look down on a lunar camera
-        cam.setPosition(lander.getPosition().x, lander.getPosition().y, lander.getPosition().z);
-        downView = ofVec3f(lander.getPosition().x ,mars.getPosition().y, lander.getPosition().z);
-        cam.setTarget(downView);
+    lander.setPosition(landerPosition.x, landerPosition.y, landerPosition.z);
+    exhaust.setPosition(landerPosition);
+    
+    // lights
+    keyLight.lookAt(landerPosition);
+    rimLight.lookAt(landerPosition);
+    fillLight.lookAt(landerPosition);
+    
+    // AGL
+    cout << "distance to ground: " << getAGL() << endl << endl;
+    
+    // collisions
+    vector<ofVec3f> collisionPoints;
+    octree->findPointIntersection(landerPosition, collisionPoints);
+    if (collisionPoints.size() > 0) {
+        ofVec3f landingForce = -landerVelocity * ofGetFrameRate();
+        collisionForce.apply(landingForce);
+        cout << "collided" << endl;
     }
     
-    
+    //camera
+    toggleCam(camOption);
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
-    
-    //    ofBackgroundGradient(ofColor(20), ofColor(0));   // pick your own backgroujnd
-    ofBackground(ofColor::black);
+    ofBackgroundGradient(ofColor(20), ofColor(0));   // pick your own backgroujnd
+    //    ofBackground(ofColor::black);
     //    cout << ofGetFrameRate() << endl;
     
     cam.begin();
@@ -186,25 +128,46 @@ void ofApp::draw(){
     }
     
     ofNoFill();
-    ofSetColor(ofColor::white);
-    //drawBox(boundingBox);
+    ofSetColor(255,255,255);
     
-    octree->draw();
-    sys.draw();
+    //    sys.draw();
     exhaust.draw();
     
-    /*ofSetColor(ofColor::red);
-     for (int i=0; i < level1.size(); i++)
-     drawBox(level1->at(i));
-     
-     ofSetColor(ofColor::blue);
-     for (int i = 0; i < level2->size(); i++)
-     drawBox(level2->at(i));
-     
-     ofSetColor(ofColor::yellow);
-     for (int i = 0; i < level3->size(); i++)
-     drawBox(level3->at(i));*/
-    
+    //    keyLight.draw();
+    //    fillLight.draw();
+    //    rimLight.draw();
+    //
+    //    switch (level) {
+    //        case 1:
+    //            ofSetColor(255, 255, 255);
+    //            break;
+    //        case 2:
+    //            ofSetColor(0, 255, 0);
+    //            break;
+    //        case 3:
+    //            ofSetColor(0, 0, 255);
+    //            break;
+    //        case 4:
+    //            ofSetColor(255, 255, 0);
+    //            break;
+    //        case 5:
+    //            ofSetColor(0, 255, 255);
+    //            break;
+    //        case 6:
+    //            ofSetColor(255, 0, 0);
+    //            break;
+    //        case 7:
+    //            ofSetColor(100, 255, 125);
+    //            break;
+    //        case 8:
+    //            ofSetColor(67, 100, 125);
+    //            break;
+    //        case 9:
+    //            ofSetColor(125, 0, 200);
+    //            break;
+    //    }
+    //    if (showOctree) octree->drawOctree(level);
+    ofDrawSphere(closestPoint, 1);
     
     ofPopMatrix();
     cam.end();
@@ -239,28 +202,73 @@ void ofApp::drawAxis(ofVec3f location) {
 
 
 void ofApp::keyPressed(int key) {
-    
     switch (key) {
-        case OF_KEY_UP:
+        case '1':
+            camOption = 1;
+            break;
+        case '2':
+            camOption = 2;
+            break;
+        case '3':
+            camOption = 3;
+            break;
+        case '4':
+            camOption = 4;
+            break;
+        case '5':
+            camOption = 5;
+            break;
+        case '6':
+            camOption = 6;
+            break;
+        case '7':
+            camOption = 7;
+            break;
+        case '-':
+            level -= 1;
+            break;
+        case '=':
+            level += 1;
+            break;
+        case '0':
+            showOctree = !showOctree;
+            break;
+        case 'O':
+        case 'o':
             thruster.add(ofVec3f(0, 1, 0));
             exhaust.setVelocity(ofVec3f(0, -10, 0));
             exhaust.start();
             break;
-        case OF_KEY_DOWN:
+        case 'L':
+        case 'l':
             thruster.add(ofVec3f(0, -1, 0));
             exhaust.setVelocity(ofVec3f(0, 10, 0));
             exhaust.start();
             break;
-        case OF_KEY_LEFT:
+        case 'K':
+        case 'k':
             thruster.add(ofVec3f(-1, 0, 0));
             exhaust.setVelocity(ofVec3f(10, 0, 0));
             exhaust.start();
             break;
-        case OF_KEY_RIGHT:
+        case ';':
             thruster.add(ofVec3f(1, 0, 0));
             exhaust.setVelocity(ofVec3f(-10, 0, 0));
             exhaust.start();
             break;
+        case 'U':
+        case 'u':
+            thruster.add(ofVec3f(0, 0, 1));
+            exhaust.setVelocity(ofVec3f(0, 0, -10));
+            exhaust.start();
+            break;
+        case 'I':
+        case 'i':
+            thruster.add(ofVec3f(0, 0, -1));
+            exhaust.setVelocity(ofVec3f(0, 0, 10));
+            exhaust.start();
+            break;
+            
         case 'C':
         case 'c':
             if (cam.getMouseInputEnabled()) cam.disableMouseInput();
@@ -273,17 +281,6 @@ void ofApp::keyPressed(int key) {
         case 'H':
         case 'h':
             break;
-        case '1':
-            aimView = true;
-            break;
-        case '2':
-            aimView = false;
-            sideView = false;
-            break;
-        case '3':
-            sideView = true;
-            aimView = false;
-            break;
         case 'r':
             cam.reset();
             break;
@@ -292,8 +289,6 @@ void ofApp::keyPressed(int key) {
             break;
         case 't':
             setCameraTarget();
-            break;
-        case 'u':
             break;
         case 'v':
             togglePointsDisplay();
@@ -315,7 +310,6 @@ void ofApp::keyPressed(int key) {
         case OF_KEY_DEL:
             break;
         case GLFW_KEY_SPACE:
-            octree->undraw();
             break;
         default:
             break;
@@ -332,6 +326,56 @@ void ofApp::toggleSelectTerrain() {
 
 void ofApp::togglePointsDisplay() {
     bDisplayPoints = !bDisplayPoints;
+}
+
+void ofApp::toggleCam(int option) {
+    ofVec3f landerPosition = sys.particles[0].position;
+    switch (option) {
+        case 1: {
+            cam.enableMouseInput();
+            cam.setPosition(ofVec3f(10, 100, 200));
+            cam.lookAt(lander.getPosition());
+            break;
+        }
+        case 2: {
+            cam.enableMouseInput();
+            cam.setPosition(landerPosition + ofVec3f(-43,90,31));
+            cam.lookAt(closestPoint);
+            break;
+        }
+        case 3: {
+            cam.disableMouseInput();
+            cam.setPosition(ofVec3f(85, 146, 133));
+            cam.lookAt(landerPosition);
+            break;
+        }
+        case 4: {
+            cam.disableMouseInput();
+            cam.setPosition(285, 32, -93);
+            cam.lookAt(landerPosition);
+            break;
+        }
+        case 5: {
+            cam.disableMouseInput();
+            cam.setPosition(landerPosition + ofVec3f(60,0,60));
+            cam.lookAt(landerPosition);
+            break;
+        }
+        case 6: {
+            cam.setPosition(lander.getPosition().x, lander.getPosition().y+3, lander.getPosition().z);
+            downView = ofVec3f(lander.getPosition().x ,mars.getPosition().y, lander.getPosition().z);
+            cam.setTarget(downView);
+            break;
+        }
+        case 7: {
+            cam.disableMouseInput();
+            cam.setPosition(lander.getPosition().x, lander.getPosition().y+0.5, lander.getPosition().z);
+            sideCamPosition = ofVec3f(lander.getPosition().x, lander.getPosition().y+0.5, lander.getPosition().z - 1);
+            cam.setTarget(sideCamPosition);
+        }
+        default:
+            break;
+    }
 }
 
 void ofApp::keyReleased(int key) {
@@ -363,35 +407,21 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
-    
     if (bAltKeyDown) return;
-    
-    ofVec3f mouse(mouseX, mouseY);
-    ofVec3f rayPoint = cam.screenToWorld(mouse);
-    ofVec3f rayDir = rayPoint - cam.getPosition();
-    rayDir.normalize();
-    Ray ray = Ray(Vector3(rayPoint.x, rayPoint.y, rayPoint.z),
-                  Vector3(rayDir.x, rayDir.y, rayDir.z));
-    
-    Clock selectionClock;
-    
-    octree->checkIntersection(ray);
-    
-    cout << "Selected in " << selectionClock.getTimeMicro() << " microseconds" << endl;
 }
 
 
 //draw a box from a "Box" class
 //
 void ofApp::drawBox(const Box &box) {
-    Vector3 min = box.parameters[0];
-    Vector3 max = box.parameters[1];
-    Vector3 size = max - min;
-    Vector3 center = size / 2 + min;
-    ofVec3f p = ofVec3f(center.x(), center.y(), center.z());
-    float w = size.x();
-    float h = size.y();
-    float d = size.z();
+    ofVec3f min = box.parameters[0];
+    ofVec3f max = box.parameters[1];
+    ofVec3f size = max - min;
+    ofVec3f center = size / 2 + min;
+    ofVec3f p = ofVec3f(center.x, center.y, center.z);
+    float w = size.x;
+    float h = size.y;
+    float d = size.z;
     ofDrawBox(p, w, h, d);
 }
 
@@ -414,40 +444,8 @@ Box ofApp::meshBounds(const ofMesh & mesh) {
         if (v.z > max.z) max.z = v.z;
         else if (v.z < min.z) min.z = v.z;
     }
-    return Box(Vector3(min.x, min.y, min.z), Vector3(max.x, max.y, max.z));
+    return Box(ofVec3f(min.x, min.y, min.z), ofVec3f(max.x, max.y, max.z));
 }
-
-//  Subdivide a Box into eight(8) equal size boxes, return them in boxList;
-//
-/*void ofApp::subDivideBox8(const Box &box, vector<Box> & boxList) {
- Vector3 min = box.parameters[0];
- Vector3 max = box.parameters[1];
- Vector3 size = max - min;
- Vector3 center = size / 2 + min;
- float xdist = (max.x() - min.x()) / 2;
- float ydist = (max.y() - min.y()) / 2;
- float zdist = (max.z() - min.z()) / 2;
- Vector3 h = Vector3(0, ydist, 0);
- 
- //  generate ground floor
- //
- Box b[8];
- b[0] = Box(min, center);
- b[1] = Box(b[0].min() + Vector3(xdist, 0, 0), b[0].max() + Vector3(xdist, 0, 0));
- b[2] = Box(b[1].min() + Vector3(0, 0, zdist), b[1].max() + Vector3(0, 0, zdist));
- b[3] = Box(b[2].min() + Vector3(-xdist, 0, 0), b[2].max() + Vector3(-xdist, 0, 0));
- 
- //boxList->clear();
- for (int i = 0; i < 4; i++)
- boxList.push_back(b[i]);
- 
- // generate second story
- //
- for (int i = 4; i < 8; i++) {
- b[i] = Box(b[i - 4].min() + h, b[i - 4].max() + h);
- boxList.push_back(b[i]);
- }
- }*/
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button) {
@@ -458,60 +456,6 @@ void ofApp::mouseDragged(int x, int y, int button) {
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button) {
     
-}
-
-
-//
-//  Select Target Point on Terrain by comparing distance of mouse to
-//  vertice points projected onto screenspace.
-//  if a point is selected, return true, else return false;
-//
-bool ofApp::doPointSelection() {
-    
-    ofMesh mesh = mars.getMesh(0);
-    int n = mesh.getNumVertices();
-    float nearestDistance = 0;
-    int nearestIndex = 0;
-    
-    bPointSelected = false;
-    
-    ofVec2f mouse(mouseX, mouseY);
-    vector<ofVec3f> selection;
-    
-    // We check through the mesh vertices to see which ones
-    // are "close" to the mouse point in screen space.  If we find
-    // points that are close, we store them in a vector (dynamic array)
-    //
-    for (int i = 0; i < n; i++) {
-        ofVec3f vert = mesh.getVertex(i);
-        ofVec3f posScreen = cam.worldToScreen(vert);
-        float distance = posScreen.distance(mouse);
-        if (distance < selectionRange) {
-            selection.push_back(vert);
-            bPointSelected = true;
-        }
-    }
-    
-    //  if we found selected points, we need to determine which
-    //  one is closest to the eye (camera). That one is our selected target.
-    //
-    if (bPointSelected) {
-        float distance = 0;
-        for (int i = 0; i < selection.size(); i++) {
-            ofVec3f point =  cam.worldToCamera(selection[i]);
-            
-            // In camera space, the camera is at (0,0,0), so distance from
-            // the camera is simply the length of the point vector
-            //
-            float curDist = point.length();
-            
-            if (i == 0 || curDist < distance) {
-                distance = curDist;
-                selectedPoint = selection[i];
-            }
-        }
-    }
-    return bPointSelected;
 }
 
 // Set the camera to use the selected point as it's new target
@@ -541,7 +485,199 @@ void ofApp::gotMessage(ofMessage msg){
     
 }
 
+void ofApp::savePicture() {
+    ofImage picture;
+    picture.grabScreen(0, 0, ofGetWidth(), ofGetHeight());
+    picture.save("screenshot.png");
+    cout << "picture saved" << endl;
+}
 
+//--------------------------------------------------------------
+//
+// support drag-and-drop of model (.obj) file loading.  when
+// model is dropped in viewport, place origin under cursor
+//
+void ofApp::dragEvent(ofDragInfo dragInfo) {
+    
+    ofVec3f point;
+    mouseIntersectPlane(ofVec3f(0, 0, 0), cam.getZAxis(), point);
+    
+    if (lander.loadModel(dragInfo.files[0])) {
+        lander.setScaleNormalization(false);
+        lander.setScale(.005, .005, .005);
+        lander.setPosition(point.x, point.y, point.z);
+        bRoverLoaded = true;
+    }
+    else cout << "Error: Can't load model" << dragInfo.files[0] << endl;
+}
+
+bool ofApp::mouseIntersectPlane(ofVec3f planePoint, ofVec3f planeNorm, ofVec3f &point) {
+    ofVec2f mouse(mouseX, mouseY);
+    ofVec3f rayPoint = cam.screenToWorld(mouse);
+    ofVec3f rayDir = rayPoint - cam.getPosition();
+    rayDir.normalize();
+    return (rayIntersectPlane(rayPoint, rayDir, planePoint, planeNorm, point));
+}
+
+// create octree
+void ofApp::createOctree(const ofMesh & mesh) {
+    // get mesh points
+    int n = mesh.getNumVertices();
+    ofVec3f v = mesh.getVertex(0);
+    ofVec3f max = v;
+    ofVec3f min = v;
+    Box boundingBox;
+    vector<ofVec3f> points;
+    
+    for (int i = 1; i < n; i++) {
+        points.push_back(mesh.getVertex(i)); // push mesh point into a vector
+        ofVec3f v = mesh.getVertex(i);
+        
+        if (v.x > max.x) max.x = v.x;
+        else if (v.x < min.x) min.x = v.x;
+        
+        if (v.y > max.y) max.y = v.y;
+        else if (v.y < min.y) min.y = v.y;
+        
+        if (v.z > max.z) max.z = v.z;
+        else if (v.z < min.z) min.z = v.z;
+    }
+    boundingBox = Box(ofVec3f(min.x, min.y, min.z), ofVec3f(max.x, max.y, max.z));
+    
+    // create new octree, takes in center and half of dimension
+    octree = new Octree(
+                        ofVec3f(
+                                (min.x + max.x) / 2,
+                                (min.y + max.y) / 2,
+                                (min.z + max.z) / 2
+                                ),
+                        ofVec3f(
+                                (max.x - min.x) / 2,
+                                (max.y - min.y) / 2,
+                                (max.z - min.z) / 2
+                                ),
+                        boundingBox
+                        );
+    
+    // insert points into octree
+    octreePoints = new OctreePoint[n];
+    for (int i=0; i< n; ++i) {
+        octreePoints[i].setPosition(points[i]);
+        octree->insert(octreePoints + i);
+    }
+}
+
+float ofApp::getAGL() {
+    vector<ofVec3f> foundPoints;
+    //    std::vector<ofVec3f>().swap(foundPoints);
+    ofVec3f spaceshipPosition = sys.particles[0].position;
+    ofVec3f rayPoint = spaceshipPosition;
+    ofVec3f rayDir = ofVec3f(0, -1, 0).normalize();
+    Ray ray = Ray(rayPoint, rayDir);
+    float closestDist = -1;
+    
+    // find closest point
+    octree->findRayIntersection(ray, foundPoints);
+    if (foundPoints.size() > 0) {
+        closestPoint = foundPoints[0];
+    } else {
+        closestPoint = ofVec3f(rayPoint.x, 0, rayPoint.z);
+    }
+    for (int i=0; i<foundPoints.size(); i+=1) {
+        ofVec3f rayToPoint = foundPoints[i] - rayPoint;
+        float mag = rayToPoint.dot(rayDir);
+        float length = rayToPoint.dot(rayToPoint);
+        float b = mag/length;
+        ofVec3f pointOnRay = rayPoint + (b * rayDir);
+        float dist = ofDist(foundPoints[i].x, foundPoints[i].y, foundPoints[i].z, pointOnRay.x, pointOnRay.y, pointOnRay.z);
+        if (closestDist == -1) closestDist = dist;
+        if (dist < closestDist) {
+            closestDist = dist;
+            closestPoint = foundPoints[i];
+        }
+    }
+    
+    return ofDist(closestPoint.x, closestPoint.y, closestPoint.z, rayPoint.x, rayPoint.y, rayPoint.z);
+}
+
+void ofApp::setupBools() {
+    bWireframe = false;
+    bDisplayPoints = false;
+    bAltKeyDown = false;
+    bCtrlKeyDown = false;
+    bRoverLoaded = false;
+    bTerrainSelected = true;
+}
+
+void ofApp::setupCam() {
+    cam.setDistance(10);
+    cam.setNearClip(.1);
+    cam.setFov(65.5);   // approx equivalent to 28mm in 35mm format
+    cam.setPosition(ofVec3f(175, 75, 0));
+    cam.disableMouseInput();
+}
+
+void ofApp::setupEnv() {
+    ofSetVerticalSync(true);
+    ofEnableSmoothing();
+    ofEnableDepthTest();
+    ofEnableLighting();
+}
+
+void ofApp::setupSceneLights() {
+    initLightingAndMaterials();
+    keyLight.setup();
+    keyLight.enable();
+    keyLight.setAreaLight(1, 1);
+    keyLight.setAmbientColor(ofFloatColor(0.1, 0.1, 0.1));
+    keyLight.setDiffuseColor(ofFloatColor(1, 1, 1));
+    keyLight.setSpecularColor(ofFloatColor(1, 1, 1));
+    keyLight.setPosition(cam.getPosition());
+    keyLight.lookAt(spaceship.position);
+    
+    fillLight.setup();
+    fillLight.enable();
+    fillLight.setPointLight();
+    fillLight.setAttenuation(1, .001, .001);
+    fillLight.setAmbientColor(ofFloatColor(0.1, 0.1, 0.1));
+    fillLight.setDiffuseColor(ofFloatColor(.5, .5, .5));
+    fillLight.setSpecularColor(ofFloatColor(.7,.7,.7));
+    fillLight.lookAt(spaceship.position);
+    fillLight.setPosition(0, spaceship.position.y - 100, 150);
+    
+    rimLight.setup();
+    rimLight.enable();
+    rimLight.setPointLight();
+    rimLight.setAttenuation(.2, .001, .001);
+    rimLight.setAmbientColor(ofFloatColor(0.1, 0.1, 0.1));
+    rimLight.setDiffuseColor(ofFloatColor(.5, .5, .5));
+    rimLight.setSpecularColor(ofFloatColor(.7,.7,.7));
+    rimLight.lookAt(spaceship.position);
+    rimLight.setPosition(-50, spaceship.position.y, -150);
+}
+
+void ofApp::setupLander() {
+    spaceship.position = ofVec3f(0, 150, 0);
+    spaceship.lifespan =  -1;
+    sys.add(spaceship);
+    sys.addForce(&thruster);
+    sys.addForce(&collisionForce);
+    
+    lander.loadModel("geo/lander.obj");
+    bRoverLoaded = true;
+    lander.setScaleNormalization(false);
+    lander.setScale(5, 5, 5);
+    lander.setPosition(spaceship.position.x, spaceship.position.y, spaceship.position.z);
+    
+    exhaust.visible = false;
+    exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
+    exhaust.setMass(1);
+    exhaust.setLifespan(.5);
+    exhaust.radius = 15;
+    exhaust.setParticleRadius(3);
+    exhaust.setRate(15);
+    exhaust.setEmitterType(DirectionalEmitter);
+}
 
 //--------------------------------------------------------------
 // setup basic ambient lighting in GL  (for now, enable just 1 light)
@@ -579,38 +715,4 @@ void ofApp::initLightingAndMaterials() {
     glEnable(GL_LIGHT0);
     //    glEnable(GL_LIGHT1);
     glShadeModel(GL_SMOOTH);
-}
-
-void ofApp::savePicture() {
-    ofImage picture;
-    picture.grabScreen(0, 0, ofGetWidth(), ofGetHeight());
-    picture.save("screenshot.png");
-    cout << "picture saved" << endl;
-}
-
-//--------------------------------------------------------------
-//
-// support drag-and-drop of model (.obj) file loading.  when
-// model is dropped in viewport, place origin under cursor
-//
-void ofApp::dragEvent(ofDragInfo dragInfo) {
-    
-    ofVec3f point;
-    mouseIntersectPlane(ofVec3f(0, 0, 0), cam.getZAxis(), point);
-    
-    if (lander.loadModel(dragInfo.files[0])) {
-        lander.setScaleNormalization(false);
-        lander.setScale(.005, .005, .005);
-        lander.setPosition(point.x, point.y, point.z);
-        bRoverLoaded = true;
-    }
-    else cout << "Error: Can't load model" << dragInfo.files[0] << endl;
-}
-
-bool ofApp::mouseIntersectPlane(ofVec3f planePoint, ofVec3f planeNorm, ofVec3f &point) {
-    ofVec2f mouse(mouseX, mouseY);
-    ofVec3f rayPoint = cam.screenToWorld(mouse);
-    ofVec3f rayDir = rayPoint - cam.getPosition();
-    rayDir.normalize();
-    return (rayIntersectPlane(rayPoint, rayDir, planePoint, planeNorm, point));
 }

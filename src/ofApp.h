@@ -2,10 +2,9 @@
 
 #include "ofMain.h"
 #include  "ofxAssimpModelLoader.h"
-#include "box.h"
-#include "ray.h"
-#include "Octree.h"
-#include "Clock.h"
+#include "Octree.hpp"
+#include "Box.hpp"
+#include "Ray.hpp"
 #include "ParticleEmitter.h"
 #include "ParticleSystem.h"
 
@@ -43,35 +42,52 @@ public:
     
     ofEasyCam cam;
     ofxAssimpModelLoader mars, lander;
+    ofMesh marsMesh;
     
+    // nathan
     Particle spaceship;
     ParticleEmitter exhaust;
     ParticleSystem sys;
     ThrusterForce thruster;
     ofSoundPlayer thrust_sound;
     
-    ofMesh marsMesh;
-    ofLight light;
-    Box* boundingBox;
-    vector<vector<Box>> levels;
+    // chris kang
+    void setupCam();
+    void setupBools();
+    void setupEnv();
+    void setupLander();
+    void setupSceneLights();
+    void toggleCam(int option);
     
-    bool bAltKeyDown;
-    bool bCtrlKeyDown;
-    bool bWireframe;
-    bool bDisplayPoints;
+    void checkCollision();
+    
+    void createOctree(const ofMesh & mesh);
+    float getAGL();
+    
+    ofLight light, keyLight, rimLight, fillLight;
+    
+    bool showOctree;
+    ofVec3f closestPoint;
+    int level, camOption = 1;
+    Octree *octree;
+    OctreePoint *octreePoints;
+    
+    ImpulseForce collisionForce;
+    ofImage spacefield;
+    
+    bool bAltKeyDown = false;
+    bool bCtrlKeyDown = false;
+    bool bWireframe = false;
+    bool bDisplayPoints = false;
     bool bPointSelected;
     
-    bool bRoverLoaded;
-    bool bTerrainSelected;
+    bool bRoverLoaded = false;
+    bool bTerrainSelected = true;
     
     ofVec3f selectedPoint;
     ofVec3f intersectPoint;
-    
-    ofVec3f camPosition;
+    ofVec3f sideCamPosition;
     ofVec3f downView;
-    bool camMove;
-    bool sideView;
-    const float selectionRange = 4.0;
     
-    TreeNode* octree;
+    const float selectionRange = 4.0;
 };

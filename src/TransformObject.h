@@ -7,11 +7,10 @@
 //  Base class for any object that needs a transform.
 //
 class TransformObject {
-protected:
+public:
 	TransformObject();
-	ofVec2f position, scale;
+	ofVec3f position, scale;
 	float	rotation;
 	bool	bSelected;
-public:
 	void setPosition(const ofVec3f &);
 };
