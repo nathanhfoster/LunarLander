@@ -37,7 +37,8 @@ public:
     void drawBox(const Box &box);
     Box meshBounds(const ofMesh &);
     void subDivideBox8(const Box &b, vector<Box>& boxList);
-    
+    void loadVbo();
+
     bool mouseIntersectPlane(ofVec3f planePoint, ofVec3f planeNorm, ofVec3f &point);
     
     ofEasyCam cam;
@@ -88,6 +89,14 @@ public:
     ofVec3f intersectPoint;
     ofVec3f sideCamPosition;
     ofVec3f downView;
+    
+    //samnang's shader
+    ofShader shader;
+    ofVbo vbo;
+    
+    // textures
+    //
+    ofTexture  particleTex;
     
     const float selectionRange = 4.0;
 };

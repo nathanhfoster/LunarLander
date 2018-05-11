@@ -38,7 +38,39 @@ void ofApp::setup(){
     
     cam.setTarget(ofVec3f(spaceship.position.x, spaceship.position.y/2, spaceship.position.z));
     
-    //    spacefield.load("starfield.jpg");
+    exhaust.setRate(20);
+    exhaust.setParticleRadius(1);
+    exhaust.visible = false;
+    
+    exhaust.setMass(1);
+    exhaust.setRandomLife(true);
+    exhaust.setOneShot(true);
+    exhaust.radius = 0.5;
+    exhaust.setParticleRadius(.05);
+    exhaust.setRate(50);
+    exhaust.setEmitterType(DirectionalEmitter);
+    exhaust.setGroupSize(1000);
+    
+    // texture loading
+    //
+    ofDisableArbTex();     // disable rectangular textures
+
+    // load textures
+    //
+    if (!ofLoadImage(particleTex, "images/dot.png")) {
+        cout << "Particle Texture File: images/dot.png not found" << endl;
+        ofExit();
+    }
+    
+    // load the shader
+    //
+#ifdef TARGET_OPENGLES
+    shader.load("shaders_gles/shader");
+#else
+    shader.load("shaders/shader");
+#endif
+    
+        spacefield.loadImage("images/spacefield.jpg");
     
     mars.loadModel("geo/moon-houdini.obj");
     mars.setScaleNormalization(false);
@@ -90,7 +122,16 @@ void ofApp::draw(){
     //    ofBackground(ofColor::black);
     //    cout << ofGetFrameRate() << endl;
     
+    loadVbo();
+    
+//    ofDisableDepthTest();
+//
+//    spacefield.draw(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
+//    ofEnableDepthTest();
+    
+
     cam.begin();
+    
     ofPushMatrix();
     if (bWireframe) {                    // wireframe mode  (include axis)
         ofDisableLighting();
@@ -128,10 +169,9 @@ void ofApp::draw(){
     }
     
     ofNoFill();
-    ofSetColor(255,255,255);
+//    ofSetColor(255,255,255);
     
-    //    sys.draw();
-    exhaust.draw();
+    
     
     //    keyLight.draw();
     //    fillLight.draw();
@@ -169,11 +209,52 @@ void ofApp::draw(){
     //    if (showOctree) octree->drawOctree(level);
     ofDrawSphere(closestPoint, 1);
     
+//    exhaust.draw();
+
     ofPopMatrix();
     cam.end();
+
+
+    shader.begin();
+    cam.begin();
+    ofSetColor(255, 100, 90);
+    
+    // this makes everything look glowy :)
+    //
+    ofEnableBlendMode(OF_BLENDMODE_ADD);
+    ofEnablePointSprites();
+
+    particleTex.bind();
+    vbo.draw(GL_POINTS, 0, (int)exhaust.sys->particles.size());
+    particleTex.unbind();
+
+    ofDisablePointSprites();
+    ofDisableBlendMode();
+    ofEnableAlphaBlending();
+    //    sys.draw();
+    cam.end();
+    shader.end();
 }
 
+// load vertex buffer in preparation for rendering
 //
+void ofApp::loadVbo() {
+    if (exhaust.sys->particles.size() < 1) return;
+    
+    vector<ofVec3f> sizes;
+    vector<ofVec3f> points;
+    for (int i = 0; i < exhaust.sys->particles.size(); i++) {
+        points.push_back(exhaust.sys->particles[i].position);
+        sizes.push_back(ofVec3f(10,10,10));
+    }
+    // upload the data to the vbo
+    //
+    int total = (int)points.size();
+    vbo.clear();
+    vbo.setVertexData(&points[0], total, GL_STATIC_DRAW);
+    vbo.setNormalData(&sizes[0], total, GL_STATIC_DRAW);
+}
+
 
 // Draw an XYZ axis in RGB at world (0,0,0) for reference.
 //
@@ -243,30 +324,30 @@ void ofApp::keyPressed(int key) {
         case 'l':
             thruster.add(ofVec3f(0, -1, 0));
             exhaust.setVelocity(ofVec3f(0, 10, 0));
-            exhaust.start();
+//            exhaust.start();
             break;
         case 'K':
         case 'k':
             thruster.add(ofVec3f(-1, 0, 0));
             exhaust.setVelocity(ofVec3f(10, 0, 0));
-            exhaust.start();
+//            exhaust.start();
             break;
         case ';':
             thruster.add(ofVec3f(1, 0, 0));
             exhaust.setVelocity(ofVec3f(-10, 0, 0));
-            exhaust.start();
+//            exhaust.start();
             break;
         case 'U':
         case 'u':
             thruster.add(ofVec3f(0, 0, 1));
             exhaust.setVelocity(ofVec3f(0, 0, -10));
-            exhaust.start();
+//            exhaust.start();
             break;
         case 'I':
         case 'i':
             thruster.add(ofVec3f(0, 0, -1));
             exhaust.setVelocity(ofVec3f(0, 0, 10));
-            exhaust.start();
+//            exhaust.start();
             break;
             
         case 'C':
@@ -338,7 +419,7 @@ void ofApp::toggleCam(int option) {
             break;
         }
         case 2: {
-            cam.enableMouseInput();
+            cam.disableMouseInput();
             cam.setPosition(landerPosition + ofVec3f(-43,90,31));
             cam.lookAt(closestPoint);
             break;
@@ -362,6 +443,7 @@ void ofApp::toggleCam(int option) {
             break;
         }
         case 6: {
+            cam.disableMouseInput();
             cam.setPosition(lander.getPosition().x, lander.getPosition().y+3, lander.getPosition().z);
             downView = ofVec3f(lander.getPosition().x ,mars.getPosition().y, lander.getPosition().z);
             cam.setTarget(downView);
