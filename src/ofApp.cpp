@@ -35,6 +35,11 @@ void ofApp::setup(){
     setupEnv();
     setupLander();
     setupSceneLights();
+
+    if (soundPlayer.load("sounds/engine.wav")) {
+		soundFileLoaded = true;
+		soundPlayer.setMultiPlay(false);
+	}
     
     cam.setTarget(ofVec3f(spaceship.position.x, spaceship.position.y/2, spaceship.position.z));
     
@@ -50,7 +55,7 @@ void ofApp::setup(){
     exhaust.setRate(50);
     exhaust.setEmitterType(DirectionalEmitter);
     exhaust.setGroupSize(1000);
-	exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
+	//exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
 	exhaust.sys->addForce(new ImpulseRadialForce(1000));
 	exhaust.sys->addForce(new CyclicForce(10));
     
@@ -322,35 +327,41 @@ void ofApp::keyPressed(int key) {
             break;
         case 'O':
         case 'o':
+			playSound();
             thruster.add(ofVec3f(0, 1, 0));
             exhaust.setVelocity(ofVec3f(0, -10, 0));
             exhaust.start();
             break;
         case 'L':
         case 'l':
+			playSound();
             thruster.add(ofVec3f(0, -1, 0));
             exhaust.setVelocity(ofVec3f(0, 10, 0));
 //            exhaust.start();
             break;
         case 'K':
         case 'k':
+			playSound();
             thruster.add(ofVec3f(-1, 0, 0));
             exhaust.setVelocity(ofVec3f(10, 0, 0));
 //            exhaust.start();
             break;
         case ';':
+			playSound();
             thruster.add(ofVec3f(1, 0, 0));
             exhaust.setVelocity(ofVec3f(-10, 0, 0));
 //            exhaust.start();
             break;
         case 'U':
         case 'u':
+			playSound();
             thruster.add(ofVec3f(0, 0, 1));
             exhaust.setVelocity(ofVec3f(0, 0, -10));
 //            exhaust.start();
             break;
         case 'I':
         case 'i':
+        	playSound();
             thruster.add(ofVec3f(0, 0, -1));
             exhaust.setVelocity(ofVec3f(0, 0, 10));
 //            exhaust.start();
@@ -468,6 +479,7 @@ void ofApp::toggleCam(int option) {
 
 void ofApp::keyReleased(int key) {
     exhaust.stop();
+    stopSound();
     thruster.set(ofVec3f(0, 0, 0));
     switch (key) {
             
@@ -760,7 +772,7 @@ void ofApp::setupLander() {
     exhaust.visible = false;
     exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
     exhaust.setMass(1);
-    exhaust.setLifespan(3);
+    exhaust.setLifespan(0);
     exhaust.radius = 15;
     exhaust.setParticleRadius(3);
     exhaust.setRate(50);
@@ -803,4 +815,12 @@ void ofApp::initLightingAndMaterials() {
     glEnable(GL_LIGHT0);
     //    glEnable(GL_LIGHT1);
     glShadeModel(GL_SMOOTH);
+}
+
+void ofApp::playSound() {
+	if (soundFileLoaded) soundPlayer.play();
+}
+
+void ofApp::stopSound() {
+	if (soundFileLoaded) soundPlayer.stop();
 }

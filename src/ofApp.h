@@ -59,9 +59,14 @@ public:
     void setupLander();
     void setupSceneLights();
     void toggleCam(int option);
+    bool soundFileLoaded = false;
 //    void loadVbo();
     
     void checkCollision();
+    
+    ofSoundPlayer soundPlayer;
+    void playSound();
+    void stopSound();
     
     void createOctree(const ofMesh & mesh);
     float getAGL();
