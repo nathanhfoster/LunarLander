@@ -59,7 +59,7 @@ public:
     void setupLander();
     void setupSceneLights();
     void toggleCam(int option);
-    void loadVbo();
+//    void loadVbo();
     
     void checkCollision();
     

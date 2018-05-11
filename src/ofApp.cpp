@@ -50,6 +50,9 @@ void ofApp::setup(){
     exhaust.setRate(50);
     exhaust.setEmitterType(DirectionalEmitter);
     exhaust.setGroupSize(1000);
+	exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
+	exhaust.sys->addForce(new ImpulseRadialForce(1000));
+	exhaust.sys->addForce(new CyclicForce(10));
     
     // texture loading
     //
@@ -70,7 +73,7 @@ void ofApp::setup(){
     shader.load("shaders/shader");
 #endif
     
-        spacefield.loadImage("images/spacefield.jpg");
+    spacefield.loadImage("images/spacefield.jpg");
     
     mars.loadModel("geo/moon-houdini.obj");
     mars.setScaleNormalization(false);
@@ -80,23 +83,6 @@ void ofApp::setup(){
     level = 1;
     showOctree = false;
     
-}
-
-void ofApp::loadVbo() {
-    if (exhaust.sys->particles.size() < 1) return;
-    
-    vector<ofVec3f> sizes;
-    vector<ofVec3f> points;
-    for (int i = 0; i < exhaust.sys->particles.size(); i++) {
-        points.push_back(exhaust.sys->particles[i].position);
-        sizes.push_back(ofVec3f(.1));
-    }
-    // upload the data to the vbo
-    //
-    int total = (int)points.size();
-    vbo.clear();
-    vbo.setVertexData(&points[0], total, GL_STATIC_DRAW);
-    vbo.setNormalData(&sizes[0], total, GL_STATIC_DRAW);
 }
 
 //--------------------------------------------------------------
@@ -144,10 +130,10 @@ void ofApp::draw(){
     
     loadVbo();
     
-//    ofDisableDepthTest();
-//
-//    spacefield.draw(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
-//    ofEnableDepthTest();
+    ofDisableDepthTest();
+
+    spacefield.draw(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
+    ofEnableDepthTest();
     
 
     cam.begin();
@@ -237,7 +223,7 @@ void ofApp::draw(){
 
     shader.begin();
     cam.begin();
-    ofSetColor(255, 100, 90);
+    ofSetColor(255, 255, 255);
     
     // this makes everything look glowy :)
     //
@@ -774,7 +760,7 @@ void ofApp::setupLander() {
     exhaust.visible = false;
     exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
     exhaust.setMass(1);
-    exhaust.setLifespan(5);
+    exhaust.setLifespan(3);
     exhaust.radius = 15;
     exhaust.setParticleRadius(3);
     exhaust.setRate(50);
