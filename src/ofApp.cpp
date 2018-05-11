@@ -566,11 +566,11 @@ void ofApp::createOctree(const ofMesh & mesh) {
                         );
     
     // insert points into octree
-    octreePoints = new OctreePoint[n];
-    for (int i=0; i< n; ++i) {
-        octreePoints[i].setPosition(points[i]);
-        octree->insert(octreePoints + i);
-    }
+	octreePoints = new OctreePoint[n];
+	for (int i = 0; i< sizeof(octreePoints); i++) {
+		octreePoints[i].setPosition(points[i]);
+		octree->insert(octreePoints + i);
+	}
 }
 
 float ofApp::getAGL() {
