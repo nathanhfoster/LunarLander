@@ -48,6 +48,34 @@ void ofApp::setup(){
     level = 1;
     showOctree = false;
 
+    ofDisableArbTex();
+    if (!ofLoadImage(particleTex, "images/dot.png")) {
+        cout << "Particle Texture File: images/dot.png not found" << endl;
+        ofExit();
+    }
+    
+#ifdef TARGET_OPENGLES
+    shader.load("shaders_gles/shader");
+#else
+    shader.load("shaders/shader");
+#endif
+}
+
+void ofApp::loadVbo() {
+    if (exhaust.sys->particles.size() < 1) return;
+    
+    vector<ofVec3f> sizes;
+    vector<ofVec3f> points;
+    for (int i = 0; i < exhaust.sys->particles.size(); i++) {
+        points.push_back(exhaust.sys->particles[i].position);
+        sizes.push_back(ofVec3f(.1));
+    }
+    // upload the data to the vbo
+    //
+    int total = (int)points.size();
+    vbo.clear();
+    vbo.setVertexData(&points[0], total, GL_STATIC_DRAW);
+    vbo.setNormalData(&sizes[0], total, GL_STATIC_DRAW);
 }
 
 //--------------------------------------------------------------
@@ -70,15 +98,18 @@ void ofApp::update() {
     fillLight.lookAt(landerPosition);
     
     // AGL
-    cout << "distance to ground: " << getAGL() << endl << endl;
+    if (!collided) cout << "distance to ground: " << getAGL() << endl << endl;
     
     // collisions
+    float particleVel = landerVelocity.length() / ofGetFrameRate();
+    cout << "particle vel: " << particleVel << endl;
     vector<ofVec3f> collisionPoints;
-    octree->findPointIntersection(landerPosition, collisionPoints);
-    if (collisionPoints.size() > 0) {
+    octree->findPointIntersection(landerPosition, particleVel, collisionPoints);
+    if (collisionPoints.size() > 0 && !collided) {
         ofVec3f landingForce = -landerVelocity * ofGetFrameRate();
         collisionForce.apply(landingForce);
         cout << "collided" << endl;
+        collided = true;
     }
     
     //camera
@@ -87,7 +118,7 @@ void ofApp::update() {
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofBackgroundGradient(ofColor(20), ofColor(0));   // pick your own backgroujnd
-//    ofBackground(ofColor::black);
+    ofBackground(ofColor::black);
 //	cout << ofGetFrameRate() << endl;
 
 	cam.begin();
@@ -128,49 +159,32 @@ void ofApp::draw(){
 	}
 	
 	ofNoFill();
-	ofSetColor(255,255,255);
+    
+//    // draw landing point
+//    ofSetColor(255,255,255);
+//    ofDrawSphere(closestPoint, .1);
 
-//    sys.draw();
-    exhaust.draw();
+    // shaders
+    ofSetColor(255, 100, 90);
+    loadVbo();
+    ofEnableBlendMode(OF_BLENDMODE_ADD);
+    ofEnablePointSprites();
+    shader.begin();
+    glDepthMask(GL_FALSE);
+    particleTex.bind();
+    vbo.draw(GL_POINTS, 0, (int)exhaust.sys->particles.size());
+    particleTex.unbind();
+    glDepthMask(GL_TRUE);
+    shader.end();
 
+//    // physical lights
 //    keyLight.draw();
 //    fillLight.draw();
 //    rimLight.draw();
-//
-//    switch (level) {
-//        case 1:
-//            ofSetColor(255, 255, 255);
-//            break;
-//        case 2:
-//            ofSetColor(0, 255, 0);
-//            break;
-//        case 3:
-//            ofSetColor(0, 0, 255);
-//            break;
-//        case 4:
-//            ofSetColor(255, 255, 0);
-//            break;
-//        case 5:
-//            ofSetColor(0, 255, 255);
-//            break;
-//        case 6:
-//            ofSetColor(255, 0, 0);
-//            break;
-//        case 7:
-//            ofSetColor(100, 255, 125);
-//            break;
-//        case 8:
-//            ofSetColor(67, 100, 125);
-//            break;
-//        case 9:
-//            ofSetColor(125, 0, 200);
-//            break;
-//    }
-//    if (showOctree) octree->drawOctree(level);
-    ofDrawSphere(closestPoint, 1);
     
 	ofPopMatrix();
 	cam.end();
+
 }
 
 // 
@@ -332,7 +346,7 @@ void ofApp::toggleCam(int option) {
     switch (option) {
         case 1: {
             cam.enableMouseInput();
-            cam.setPosition(ofVec3f(175, 75, 0));
+//            cam.setPosition(ofVec3f(175, 75, 0));
             break;
         }
         case 2: {
@@ -649,7 +663,7 @@ void ofApp::setupSceneLights() {
 }
 
 void ofApp::setupLander() {
-    spaceship.position = ofVec3f(0, 150, 0);
+    spaceship.position = ofVec3f(0, 50, 0);
     spaceship.lifespan =  -1;
     sys.add(spaceship);
     sys.addForce(&thruster);
@@ -664,10 +678,10 @@ void ofApp::setupLander() {
     exhaust.visible = false;
     exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
     exhaust.setMass(1);
-    exhaust.setLifespan(.5);
+    exhaust.setLifespan(5);
     exhaust.radius = 15;
     exhaust.setParticleRadius(3);
-    exhaust.setRate(15);
+    exhaust.setRate(50);
     exhaust.setEmitterType(DirectionalEmitter);
 }
 

@@ -58,6 +58,7 @@ class ofApp : public ofBaseApp{
     void setupLander();
     void setupSceneLights();
     void toggleCam(int option);
+    void loadVbo();
     
     void checkCollision();
     
@@ -66,7 +67,7 @@ class ofApp : public ofBaseApp{
 
     ofLight light, keyLight, rimLight, fillLight;
     
-    bool showOctree;
+    bool showOctree, collided;
     ofVec3f closestPoint;
     int level, camOption = 1;
     Octree *octree;
@@ -74,6 +75,10 @@ class ofApp : public ofBaseApp{
     
     ImpulseForce collisionForce;
     ofImage spacefield;
+    
+    ofTexture particleTex;
+    ofVbo vbo;
+    ofShader shader;
     
 		bool bAltKeyDown = false;
 		bool bCtrlKeyDown = false;

@@ -143,17 +143,21 @@ public:
         }
     }
     
-    void findPointIntersection(const ofVec3f& p, std::vector<ofVec3f>& results) {
+    void findPointIntersection(const ofVec3f& p, float epsilon, std::vector<ofVec3f>& results) {
         
         if (isLeafNode()) {
             if (data != NULL) {
-                if(p.x > box.max().x || p.y > box.max().y || p.z > box.max().z) return;
-                if(p.x < box.min().x || p.y < box.min().y || p.z < box.min().z) return;
-                results.push_back(data->getPosition());
+                if (ofDist(origin.x, origin.y, origin.z, p.x, p.y, p.z) < epsilon) {
+                    results.push_back(data->getPosition());
+                } else {
+                    if(p.x > box.max().x || p.y > box.max().y || p.z > box.max().z) return;
+                    if(p.x < box.min().x || p.y < box.min().y || p.z < box.min().z) return;
+                    results.push_back(data->getPosition());
+                }
             }
         } else {
             for (int i=0; i<8; i++) {
-                children[i]->findPointIntersection(p, results);
+                children[i]->findPointIntersection(p, epsilon, results);
             }
         }
     }
