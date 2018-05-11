@@ -82,6 +82,23 @@ void ofApp::setup(){
     
 }
 
+void ofApp::loadVbo() {
+    if (exhaust.sys->particles.size() < 1) return;
+    
+    vector<ofVec3f> sizes;
+    vector<ofVec3f> points;
+    for (int i = 0; i < exhaust.sys->particles.size(); i++) {
+        points.push_back(exhaust.sys->particles[i].position);
+        sizes.push_back(ofVec3f(.1));
+    }
+    // upload the data to the vbo
+    //
+    int total = (int)points.size();
+    vbo.clear();
+    vbo.setVertexData(&points[0], total, GL_STATIC_DRAW);
+    vbo.setNormalData(&sizes[0], total, GL_STATIC_DRAW);
+}
+
 //--------------------------------------------------------------
 // incrementally update scene (animation)
 //
@@ -102,15 +119,18 @@ void ofApp::update() {
     fillLight.lookAt(landerPosition);
     
     // AGL
-    cout << "distance to ground: " << getAGL() << endl << endl;
+    if (!collided) cout << "distance to ground: " << getAGL() << endl << endl;
     
     // collisions
+    float particleVel = landerVelocity.length() / ofGetFrameRate();
+    cout << "particle vel: " << particleVel << endl;
     vector<ofVec3f> collisionPoints;
-    octree->findPointIntersection(landerPosition, collisionPoints);
-    if (collisionPoints.size() > 0) {
+    octree->findPointIntersection(landerPosition, particleVel, collisionPoints);
+    if (collisionPoints.size() > 0 && !collided) {
         ofVec3f landingForce = -landerVelocity * ofGetFrameRate();
         collisionForce.apply(landingForce);
         cout << "collided" << endl;
+        collided = true;
     }
     
     //camera
@@ -642,11 +662,11 @@ void ofApp::createOctree(const ofMesh & mesh) {
                         );
     
     // insert points into octree
-    octreePoints = new OctreePoint[n];
-    for (int i=0; i< n; ++i) {
-        octreePoints[i].setPosition(points[i]);
-        octree->insert(octreePoints + i);
-    }
+	octreePoints = new OctreePoint[n];
+	for (int i = 0; i< sizeof(octreePoints); i++) {
+		octreePoints[i].setPosition(points[i]);
+		octree->insert(octreePoints + i);
+	}
 }
 
 float ofApp::getAGL() {
@@ -739,7 +759,7 @@ void ofApp::setupSceneLights() {
 }
 
 void ofApp::setupLander() {
-    spaceship.position = ofVec3f(0, 150, 0);
+    spaceship.position = ofVec3f(0, 50, 0);
     spaceship.lifespan =  -1;
     sys.add(spaceship);
     sys.addForce(&thruster);
@@ -754,10 +774,10 @@ void ofApp::setupLander() {
     exhaust.visible = false;
     exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
     exhaust.setMass(1);
-    exhaust.setLifespan(.5);
+    exhaust.setLifespan(5);
     exhaust.radius = 15;
     exhaust.setParticleRadius(3);
-    exhaust.setRate(15);
+    exhaust.setRate(50);
     exhaust.setEmitterType(DirectionalEmitter);
 }
 
