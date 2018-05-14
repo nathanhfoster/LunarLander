@@ -14,3 +14,11 @@
 obj/Debug/
 
 *.opendb
+
+*.pdb
+
+*.ilk
+
+*.exe
+
+bin/LunarLander_debug\.lib

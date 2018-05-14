@@ -47,13 +47,13 @@ void ofApp::setup(){
     exhaust.visible = false;
     
     exhaust.setMass(1);
-    exhaust.setRandomLife(true);
+    exhaust.setRandomLife(false);
     exhaust.setOneShot(true);
     exhaust.radius = 0.5;
     exhaust.setParticleRadius(.05);
    
     exhaust.setEmitterType(DirectionalEmitter);
-    exhaust.setGroupSize(1000);
+    exhaust.setGroupSize(100);
     
     // texture loading
     //
@@ -770,7 +770,7 @@ void ofApp::setupLander() {
 	exhaust.sys->addForce(new ImpulseRadialForce(10));
 	exhaust.sys->addForce(new CyclicForce(10));
     exhaust.setMass(1);
-    exhaust.setLifespan(1);
+    exhaust.setLifespan(1.5);
     exhaust.radius = 15;
     exhaust.setParticleRadius(3);
     exhaust.setRate(20);
