@@ -38,13 +38,12 @@ void ofApp::setup(){
 
     if (soundPlayer.load("sounds/engine.wav")) {
 		soundFileLoaded = true;
-		soundPlayer.setMultiPlay(false);
+		soundPlayer.setMultiPlay(true);
 	}
     
     cam.setTarget(ofVec3f(spaceship.position.x, spaceship.position.y/2, spaceship.position.z));
     
-    exhaust.setRate(20);
-    exhaust.setParticleRadius(1);
+    
     exhaust.visible = false;
     
     exhaust.setMass(1);
@@ -52,12 +51,9 @@ void ofApp::setup(){
     exhaust.setOneShot(true);
     exhaust.radius = 0.5;
     exhaust.setParticleRadius(.05);
-    exhaust.setRate(50);
+   
     exhaust.setEmitterType(DirectionalEmitter);
     exhaust.setGroupSize(1000);
-	//exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
-	exhaust.sys->addForce(new ImpulseRadialForce(1000));
-	exhaust.sys->addForce(new CyclicForce(10));
     
     // texture loading
     //
@@ -431,7 +427,7 @@ void ofApp::toggleCam(int option) {
     switch (option) {
         case 1: {
             cam.enableMouseInput();
-            cam.setPosition(ofVec3f(10, 100, 200));
+            cam.setPosition(ofVec3f(10, 100, 100));
             cam.lookAt(lander.getPosition());
             break;
         }
@@ -770,12 +766,14 @@ void ofApp::setupLander() {
     lander.setPosition(spaceship.position.x, spaceship.position.y, spaceship.position.z);
     
     exhaust.visible = false;
-    exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
+	//exhaust.sys->addForce(new TurbulenceForce(ofVec3f(-5, -5, -5), ofVec3f(5, 5, 5)));
+	exhaust.sys->addForce(new ImpulseRadialForce(10));
+	exhaust.sys->addForce(new CyclicForce(10));
     exhaust.setMass(1);
-    exhaust.setLifespan(0);
+    exhaust.setLifespan(1);
     exhaust.radius = 15;
     exhaust.setParticleRadius(3);
-    exhaust.setRate(50);
+    exhaust.setRate(20);
     exhaust.setEmitterType(DirectionalEmitter);
 }
 
